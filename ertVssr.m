@@ -1,19 +1,23 @@
-function ertVssr(Topo, Doi,Data, zero_offset, Er_data, xaxis, yaxis, VpContRng, VpThresh)
+function ertVssr(Topo, Doi,Data, zero_offset, Er_data, xaxis, yaxis, VpContRng, VpThresh,rpRange,corr_flg,site)
 
 %% ERT vs. SSR: compares colocated ERT and Vp images
 % topo         = elevation [x | z] meters
 % doi          = ERT depth of investigation [x | z] meters depth
 % data         = ssr inverted result, xzv format from Geogigga, = m/s
-% zero_offfset = difference between start of ssr and ert lines. 
+% zero_offfset = difference between start of ssr and ert lines.
 % er_data      = name of inverted ERT result file, output from R2
 % xaxis        = set the Yaxis for the mesh with interval, eg min#:intvl#:max#
 % yaxis        = set the Yaxis for the mesh with interval, eg min#:intvl#:max#
 % VpThresh     = threshold minimum Vp values to ignore, suggest ~0.3km/s
+% rpRange      = plotting ranges [minRho maxRho minVp maxVp]
+% corr_flg     = flag indicating (1 = yes) if topo correction needed [DOI ERT_mesh]
+% site         = name of site for figure title
 %% terrain
 topo =  load(Topo);
 doi  =  load(Doi);
-doi(:,2)  =  doi(:,2)+min(topo(:,2)); %correct DOI for elevation
-
+if corr_flg(1) == 1;
+    doi(:,2)  =  doi(:,2)+min(topo(:,2)); %correct DOI for elevation
+end
 %% load seismic
 data = load(Data); % col1 = x, col2 = z, col3 = velocity, m/s
 data(:,1) = data(:,1)+zero_offset; % Geophone 1 = elecrode #1.
@@ -25,7 +29,9 @@ vpField(isnan(vpField)) = -999;
 
 %% ert (measured at the same time or similar as seismic)
 er_data = load(Er_data); %  col1 = x, col2 = z, col3 = resistivity, ohm m, col4 = resistivity log10(ohm m)
-er_data(:,2) = er_data(:,2)+min(topo(:,2)); %if needed, correct ERT mesh to topography
+if corr_flg(2) == 1;
+    er_data(:,2) = er_data(:,2)+min(topo(:,2)); %if needed, correct ERT mesh to topography
+end
 [~, ~, logresField1]=griddata(er_data(:,1),er_data(:,2),er_data(:,4),xaxis,yaxis');
 logresField1(isnan(logresField1)) = -999;
 
@@ -77,11 +83,11 @@ ylabel('elevation, m')
 title('resistivity, ohm m; Vp, km s^-^1')
 colorbar
 
-set(findall(gcf,'-property','FontSize'),'FontSize',11 ) 
-set(findall(gcf,'-property','FontName'),'FontName','Avenir' ) 
-set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 20 8]) 
+set(findall(gcf,'-property','FontSize'),'FontSize',11 )
+set(findall(gcf,'-property','FontName'),'FontName','Avenir' )
+set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 20 8])
 outname = 'rho_vp.jpg';
-print(outname,'-djpeg','-r600')
+print([site outname],'-djpeg','-r600')
 close all
 
 %% Vp/er ratio #2
@@ -94,24 +100,26 @@ ylabel('elevation, m')
 title('ratio log_1_0(Vp)/log_1_0(\rho), log_1_0(m s^-^1)/log_1_0(ohm m)')
 colorbar
 
-set(findall(gcf,'-property','FontSize'),'FontSize',11 ) 
-set(findall(gcf,'-property','FontName'),'FontName','Avenir' ) 
-set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 20 8]) 
+set(findall(gcf,'-property','FontSize'),'FontSize',11 )
+set(findall(gcf,'-property','FontName'),'FontName','Avenir' )
+set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 20 8])
 outname = 'ratio2.jpg';
-print(outname,'-djpeg','-r600')
+print([site outname],'-djpeg','-r600')
 close all
 
 %% RockPhysics Plot (rrplot)
 figure
 scatter(datOut2(:,3),datOut2(:,4),20,datOut2(:,5),'filled','o')
-xlim([1 3.5])
-ylim([.2 .9])
-xlabel('log10(\rho)')
-ylabel('Vp')
+xlim(rpRange(1:2))
+ylim(rpRange(3:4))
+xlabel('log10(\rho) [Ohm m]')
+ylabel('Vp [km s^-^1]')
+colorbar('location','north'); caxis([-10 0])
+title('depth below surface [m]')
 
-set(findall(gcf,'-property','FontSize'),'FontSize',11 ) 
-set(findall(gcf,'-property','FontName'),'FontName','Avenir' ) 
-set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 8 8]) 
+set(findall(gcf,'-property','FontSize'),'FontSize',11 )
+set(findall(gcf,'-property','FontName'),'FontName','Avenir' )
+set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 8 8])
 outname = 'rpplot.jpg';
-print(outname,'-djpeg','-r600')
+print([site outname],'-djpeg','-r600')
 close all
