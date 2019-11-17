@@ -110,12 +110,12 @@ close all
 
 %% RockPhysics Plot (rrplot)
 figure
-scatter(datOut2(:,3),datOut2(:,4),20,datOut2(:,5),'filled','o')
-xlim(rpRange(1:2))
-ylim(rpRange(3:4))
-xlabel('log10(\rho) [Ohm m]')
-ylabel('Vp [km s^-^1]')
-colorbar('location','north'); caxis([-10 0])
+scatter(datOut2(:,4),datOut2(:,3),20,datOut2(:,5),'filled','o')
+ylim(rpRange(1:2))
+xlim(rpRange(3:4))
+ylabel('log10(\rho) [Ohm m]')
+xlabel('Vp [km s^-^1]')
+colorbar('location','north'); caxis([-5 0])
 title('depth below surface [m]')
 
 set(findall(gcf,'-property','FontSize'),'FontSize',11 )
