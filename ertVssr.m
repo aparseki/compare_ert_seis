@@ -14,6 +14,7 @@ function ertVssr(Topo, Doi,Data, zero_offset, Er_data, xaxis, yaxis, VpContRng, 
 % site         = name of site for figure title
 %% terrain
 topo =  load(Topo);
+%topo = [topo(:,1)+31 topo(:,2)];
 doi  =  load(Doi);
 if corr_flg(1) == 1;
     doi(:,2)  =  doi(:,2)+min(topo(:,2)); %correct DOI for elevation
@@ -21,12 +22,13 @@ end
 %% load seismic
 data = load(Data); % col1 = x, col2 = z, col3 = velocity, m/s
 data(:,1) = data(:,1)+zero_offset; % Geophone 1 = elecrode #1.
-data(:,3) = data(:,3)/1000; % convert to km/s
-
+vVals = data(:,3)/1000; % convert to km/s
+vVals(vVals<0) = max(vVals);
+data(:,3) = vVals;
 %% interpolate seismic
-[~, ~, vpField]=griddata(data(:,1),data(:,2),data(:,3),xaxis,yaxis');
-vpField(isnan(vpField)) = -999;
-
+[~, ~, vpField]=griddata(data(:,1),data(:,2),data(:,3),xaxis,yaxis','natural');
+%vpField(isnan(vpField)) = max(max(vpField));
+vpField(isnan(vpField)) = 0;
 %% ert (measured at the same time or similar as seismic)
 er_data = load(Er_data); %  col1 = x, col2 = z, col3 = resistivity, ohm m, col4 = resistivity log10(ohm m)
 if corr_flg(2) == 1;
@@ -34,7 +36,6 @@ if corr_flg(2) == 1;
 end
 [~, ~, logresField1]=griddata(er_data(:,1),er_data(:,2),er_data(:,4),xaxis,yaxis');
 logresField1(isnan(logresField1)) = -999;
-
 %% removing data not in the zone of interest
 cnt = 1;
 % first loop removes anything above the topography
@@ -77,7 +78,7 @@ imagesc(xaxis,yaxis,logresField1); caxis([1 3]); set(gca,'ydir','normal'); hold 
 plot(topo(:,1),topo(:,2),'-k'); plot(doi(:,1),doi(:,2),'--k'); hold on
 [c,h] =contour(xaxis,yaxis,vpField,VpContRng,'color','w');
 clabel(c,h,'color','w')
-patch([topo(1,1)-1; topo(:,1); topo(1,1)],[topo(1,2); topo(:,2); topo(end,2)],'w')
+patch([topo(1,1); topo(:,1); topo(1,1)],[topo(1,2); topo(:,2); topo(end,2)],'w')
 xlabel('distance, m')
 ylabel('elevation, m')
 title('resistivity, ohm m; Vp, km s^-^1')
@@ -94,7 +95,7 @@ close all
 figure
 imagesc(xaxis,yaxis,real(log10(1000.*vpField))./logresField1);caxis([.5 2]); set(gca,'ydir','normal'); hold on
 plot(topo(:,1),topo(:,2),'-k'); plot(doi(:,1),doi(:,2),'--k')
-patch([topo(1,1)-1; topo(:,1); topo(1,1)],[topo(1,2); topo(:,2); topo(end,2)],'w')
+patch([topo(1,1); topo(:,1); topo(1,1)],[topo(1,2); topo(:,2); topo(end,2)],'w')
 xlabel('distance, m')
 ylabel('elevation, m')
 title('ratio log_1_0(Vp)/log_1_0(\rho), log_1_0(m s^-^1)/log_1_0(ohm m)')
