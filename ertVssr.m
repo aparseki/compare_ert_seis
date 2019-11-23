@@ -1,4 +1,4 @@
-function ertVssr(Topo, Doi,Data, zero_offset, Er_data, xaxis, yaxis, VpContRng, VpThresh,rpRange,corr_flg,site)
+function [vp, er, depth, xz] = ertVssr(Topo, Doi,Data, zero_offset, Er_data, xaxis, yaxis, VpContRng, VpThresh,rpRange,corr_flg,site)
 
 %% ERT vs. SSR: compares colocated ERT and Vp images
 % topo         = elevation [x | z] meters
@@ -23,7 +23,8 @@ end
 data = load(Data); % col1 = x, col2 = z, col3 = velocity, m/s
 data(:,1) = data(:,1)+zero_offset; % Geophone 1 = elecrode #1.
 vVals = data(:,3)/1000; % convert to km/s
-vVals(vVals<0) = max(vVals);
+%vVals(vVals<0) = max(vVals);
+vVals(vVals<0) = -1;
 data(:,3) = vVals;
 %% interpolate seismic
 [~, ~, vpField]=griddata(data(:,1),data(:,2),data(:,3),xaxis,yaxis','natural');
@@ -41,8 +42,9 @@ cnt = 1;
 % first loop removes anything above the topography
 for i = 1:length(xaxis)
     for j = 1:length(yaxis)
-        a1 = topo(:,1)-xaxis(i);
-        a2 = find(a1==min(abs(a1)));
+        q1 = topo(:,1);
+        v1 = xaxis(i);
+        [~,a2] = (min(abs(q1 - v1)));
         if yaxis(j)<topo(a2,2)
             datOut(cnt,:) = [xaxis(i) yaxis(j) logresField1(j,i) vpField(j,i) yaxis(j)-topo(a2,2)];
             cnt = cnt+1;
@@ -53,8 +55,9 @@ end
 %second loop removes anything below ERT DOI
 cnt = 1;
 for i = 1:length(datOut);
-    b1 = doi(:,1)-datOut(i,1);
-    b2 = find(b1==min(abs(b1)));
+    q2 = doi(:,1);
+    v2 = datOut(i,1);
+    [~,b2] = (min(abs(q2 - v2)));
     if datOut(i,2)>doi(b2,2)
         datOutA(cnt,:) = datOut(i,:);
         cnt = cnt+1;
@@ -65,11 +68,19 @@ end
 cnt = 1;
 for i = 1:length(datOutA);
     if datOutA(i,4)>VpThresh
-        datOut2(cnt,:) = datOutA(i,:);
+        datOut3(cnt,:) = datOutA(i,:);
         cnt = cnt+1;
     end
 end
 
+% fourth loop removes bad vals from ERT
+cnt = 1;
+for i = 1:length(datOut3);
+    if datOut3(i,3)>0
+        datOut2(cnt,:) = datOut3(i,:);
+        cnt = cnt+1;
+    end
+end
 %% rho and Vp data co-plotted
 close all
 
@@ -124,3 +135,8 @@ set(gcf,'PaperUnits','centimeters','PaperPosition',[0 0 8 8])
 outname = 'rpplot.jpg';
 print([site outname],'-djpeg','-r600')
 close all
+
+xz    = datOut2(:,1:2);
+vp    = datOut2(:,4);
+er    = datOut2(:,3);
+depth = datOut2(:,5);
