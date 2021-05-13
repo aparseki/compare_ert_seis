@@ -7,3 +7,4 @@ http://www.es.lancs.ac.uk/people/amb/Freeware/R2/R2.htm
 
 http://www.geogiga.com/en/index.php
 
+[please note: this is a development version of this script.  use at you own risk!]
